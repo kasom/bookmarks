@@ -31,10 +31,12 @@ if ($method === 'POST') {
             exit;
         }
 
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            echo json_encode(['error' => 'Invalid URL']);
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (!filter_var($url, FILTER_VALIDATE_URL) || !in_array(strtolower($scheme ?: ''), ['http', 'https'])) {
+            echo json_encode(['error' => 'Invalid URL or unsupported protocol (must be http or https)']);
             exit;
         }
+
 
         if ($folder_id) {
             $stmt = $pdo->prepare('SELECT id FROM folders WHERE id = ? AND user_id = ?');
@@ -70,6 +72,12 @@ if ($method === 'POST') {
 
         if (!$id || !$url || !$title) {
             echo json_encode(['error' => 'Missing required fields']);
+            exit;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (!filter_var($url, FILTER_VALIDATE_URL) || !in_array(strtolower($scheme ?: ''), ['http', 'https'])) {
+            echo json_encode(['error' => 'Invalid URL or unsupported protocol (must be http or https)']);
             exit;
         }
 
