@@ -1,0 +1,10 @@
+*.log
+*.sql.bak
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.env
+vendor/
+node_modules/

@@ -1,0 +1,57 @@
+/* css/style.css */
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.bookmark-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bookmark-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bookmark-card .card-title a:hover {
+    color: #0d6efd !important;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+.list-group-item-action:hover {
+    background-color: #e9ecef;
+}
+
+.badge {
+    font-weight: 500;
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.alert {
+    border-radius: 8px;
+}
+
+.card {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 112, 253, 0.15);
+}
+
+.btn-close {
+    opacity: 0.5;
+}
+
+.text-muted.small {
+    line-height: 1.4;
+}

@@ -1,0 +1,17 @@
+# .htaccess - Clean URLs for bookmarks
+RewriteEngine On
+RewriteBase /bookmarks/
+
+# Prevent directory browsing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.(sql|log|conf|ini)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
