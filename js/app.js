@@ -128,6 +128,35 @@
         });
     }
 
+    // Edit Folder - open modal
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.edit-folder')) {
+            e.preventDefault();
+            var btn = e.target.closest('.edit-folder');
+            document.getElementById('rename_folder_id').value = btn.dataset.id;
+            document.getElementById('rename_folder_name').value = btn.dataset.name;
+            new bootstrap.Modal(document.getElementById('renameFolderModal')).show();
+        }
+    });
+
+    // Rename Folder - submit
+    var renameFolderForm = document.getElementById('renameFolderForm');
+    if (renameFolderForm) {
+        renameFolderForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var fd = new FormData(this);
+            fd.append('action', 'rename');
+            submitForm('/bookmarks/api/folders.php', fd, function (data) {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('renameFolderModal')).hide();
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error renaming folder');
+                }
+            });
+        });
+    }
+
     // Delete Folder
     document.addEventListener('click', function (e) {
         if (e.target.classList.contains('delete-folder')) {

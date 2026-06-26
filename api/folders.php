@@ -28,6 +28,19 @@ if ($method === 'POST') {
 
         echo json_encode(['success' => true, 'id' => (int)$pdo->lastInsertId()]);
 
+    } elseif ($action === 'rename') {
+        $id = (int)($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        if (!$id || !$name) {
+            echo json_encode(['error' => 'Folder ID and name are required']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('UPDATE folders SET name = ? WHERE id = ? AND user_id = ?');
+        $stmt->execute([$name, $id, $user_id]);
+
+        echo json_encode(['success' => true]);
+
     } elseif ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
         if (!$id) {

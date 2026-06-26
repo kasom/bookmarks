@@ -64,7 +64,12 @@ require_once __DIR__ . '/includes/header.php';
                 <?php foreach ($folders as $f): ?>
                 <a href="/bookmarks/index.php?folder_id=<?= $f['id'] ?>" class="list-group-item list-group-item-action <?= $folder_id === $f['id'] ? 'active' : '' ?>">
                     <i class="bi bi-folder"></i> <?= h($f['name']) ?>
-                    <button class="btn btn-sm btn-link float-end p-0 text-danger delete-folder" data-id="<?= $f['id'] ?>" data-name="<?= h($f['name']) ?>">×</button>
+                    <span class="float-end">
+                        <button class="btn btn-sm btn-link p-0 edit-folder me-2" data-id="<?= $f['id'] ?>" data-name="<?= h($f['name']) ?>">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-link p-0 text-danger delete-folder" data-id="<?= $f['id'] ?>" data-name="<?= h($f['name']) ?>">×</button>
+                    </span>
                 </a>
                 <?php endforeach; ?>
             </div>
@@ -258,6 +263,29 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
+<!-- Rename Folder Modal -->
+<div class="modal fade" id="renameFolderModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rename Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="renameFolderForm">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                    <input type="hidden" name="id" id="rename_folder_id">
+                    <input type="text" name="name" id="rename_folder_name" class="form-control" required placeholder="Folder name">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Rename</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Add Folder Modal -->
 <div class="modal fade" id="addFolderModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -274,6 +302,29 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Folder Modal -->
+<div class="modal fade" id="renameFolderModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rename Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="renameFolderForm">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                    <input type="hidden" name="id" id="rename_folder_id">
+                    <input type="text" name="name" id="rename_folder_name" class="form-control" required placeholder="New folder name">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Rename</button>
                 </div>
             </form>
         </div>
