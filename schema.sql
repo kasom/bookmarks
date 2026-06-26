@@ -56,3 +56,15 @@ CREATE TABLE IF NOT EXISTS shared_bookmarks (
     FOREIGN KEY (shared_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (shared_with_user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    endpoint VARCHAR(20) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    identifier VARCHAR(100) NOT NULL DEFAULT '',
+    attempts INT NOT NULL DEFAULT 1,
+    last_attempt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    locked_until DATETIME DEFAULT NULL,
+    INDEX idx_endpoint_ip (endpoint, ip_address),
+    INDEX idx_locked (locked_until)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

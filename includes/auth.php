@@ -4,6 +4,67 @@ session_start();
 
 require_once __DIR__ . '/../config/database.php';
 
+// Rate limit config
+define('RATE_LOGIN_MAX_ATTEMPTS', 5);
+define('RATE_LOGIN_LOCK_MINUTES', 15);
+define('RATE_REGISTER_MAX_ATTEMPTS', 3);
+define('RATE_REGISTER_LOCK_MINUTES', 60);
+
+function get_client_ip(): string {
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) return $_SERVER['HTTP_CLIENT_IP'];
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) return explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+function check_rate_limit(string $endpoint, string $identifier = ''): array {
+    global $pdo;
+    $ip = get_client_ip();
+
+    $stmt = $pdo->prepare('SELECT attempts, locked_until FROM rate_limits WHERE endpoint = ? AND ip_address = ? ORDER BY id DESC LIMIT 1');
+    $stmt->execute([$endpoint, $ip]);
+    $record = $stmt->fetch();
+
+    if ($record) {
+        $locked_until = $record['locked_until'];
+        if ($locked_until && $locked_until > date('Y-m-d H:i:s')) {
+            $remaining = (strtotime($locked_until) - time()) / 60;
+            return ['locked' => true, 'remaining_minutes' => ceil($remaining)];
+        }
+        if ($locked_until || (int)$record['attempts'] >= ($endpoint === 'login' ? RATE_LOGIN_MAX_ATTEMPTS : RATE_REGISTER_MAX_ATTEMPTS)) {
+            // Reset after lock period expired
+            $pdo->prepare('DELETE FROM rate_limits WHERE endpoint = ? AND ip_address = ?')->execute([$endpoint, $ip]);
+        }
+    }
+
+    return ['locked' => false];
+}
+
+function record_rate_attempt(string $endpoint, string $identifier = ''): void {
+    global $pdo;
+    $ip = get_client_ip();
+    $max_attempts = $endpoint === 'login' ? RATE_LOGIN_MAX_ATTEMPTS : RATE_REGISTER_MAX_ATTEMPTS;
+    $lock_minutes = $endpoint === 'login' ? RATE_LOGIN_LOCK_MINUTES : RATE_REGISTER_LOCK_MINUTES;
+
+    $stmt = $pdo->prepare('SELECT id, attempts FROM rate_limits WHERE endpoint = ? AND ip_address = ? ORDER BY id DESC LIMIT 1');
+    $stmt->execute([$endpoint, $ip]);
+    $record = $stmt->fetch();
+
+    if ($record) {
+        $new_attempts = (int)$record['attempts'] + 1;
+        $locked_until = $new_attempts >= $max_attempts ? date('Y-m-d H:i:s', strtotime("+$lock_minutes minutes")) : null;
+        $pdo->prepare('UPDATE rate_limits SET attempts = ?, last_attempt = NOW(), locked_until = ? WHERE id = ?')->execute([$new_attempts, $locked_until, $record['id']]);
+    } else {
+        $locked_until = null;
+        $pdo->prepare('INSERT INTO rate_limits (endpoint, ip_address, identifier, attempts, last_attempt) VALUES (?, ?, ?, 1, NOW())')->execute([$endpoint, $ip, $identifier]);
+    }
+}
+
+function clear_rate_limit(string $endpoint): void {
+    global $pdo;
+    $ip = get_client_ip();
+    $pdo->prepare('DELETE FROM rate_limits WHERE endpoint = ? AND ip_address = ?')->execute([$endpoint, $ip]);
+}
+
 function is_logged_in(): bool {
     return isset($_SESSION['user_id']);
 }
@@ -36,11 +97,19 @@ function require_admin(): void {
 
 function login(string $username, string $password): array {
     global $pdo;
+
+    // Check rate limit
+    $rate = check_rate_limit('login', $username);
+    if ($rate['locked']) {
+        return ['success' => false, 'error' => 'Too many failed attempts. Try again in ' . $rate['remaining_minutes'] . ' minute(s).'];
+    }
+
     $stmt = $pdo->prepare('SELECT id, username, password_hash, approved, disabled, is_admin FROM users WHERE username = ?');
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
+        record_rate_attempt('login', $username);
         return ['success' => false, 'error' => 'Invalid username or password.'];
     }
 
@@ -52,6 +121,7 @@ function login(string $username, string $password): array {
         return ['success' => false, 'error' => 'Your account is pending approval. Please wait.'];
     }
 
+    clear_rate_limit('login');
     $_SESSION['user_id'] = (int)$user['id'];
     $_SESSION['username'] = $user['username'];
     $_SESSION['is_admin'] = (int)$user['is_admin'];
@@ -66,6 +136,13 @@ function logout(): void {
 
 function register(string $username, string $email, string $password): array {
     global $pdo;
+
+    // Check rate limit
+    $rate = check_rate_limit('register');
+    if ($rate['locked']) {
+        return ['success' => false, 'errors' => ['Too many registration attempts. Try again in ' . $rate['remaining_minutes'] . ' minute(s).']];
+    }
+
     $errors = [];
 
     if (strlen($username) < 3 || strlen($username) > 50) {
@@ -90,6 +167,8 @@ function register(string $username, string $email, string $password): array {
     if ($stmt->fetchColumn() > 0) {
         return ['success' => false, 'errors' => ['Username or email already exists.']];
     }
+
+    record_rate_attempt('register');
 
     $hash = password_hash($password, PASSWORD_BCRYPT);
     $stmt = $pdo->prepare('INSERT INTO users (username, email, password_hash, approved) VALUES (?, ?, ?, 0)');
