@@ -1,5 +1,11 @@
 // js/app.js
 (function () {
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
     function getCsrfToken() {
         var el = document.querySelector('input[name="csrf_token"]');
         return el ? el.value : '';
@@ -193,7 +199,7 @@
                     if (data.success) {
                         var html = '<div class="list-group">';
                         data.users.forEach(function (u) {
-                            html += '<a href="#" class="list-group-item list-group-item-action select-user" data-username="' + u.username + '">' + u.username + '</a>';
+                            html += '<a href="#" class="list-group-item list-group-item-action select-user" data-username="' + escapeHtml(u.username) + '">' + escapeHtml(u.username) + '</a>';
                         });
                         html += '</div>';
                         document.getElementById('share_suggestions').innerHTML = data.users.length ? html : '<small class="text-muted">No users found</small>';
@@ -243,7 +249,7 @@
                 } else {
                     data.shares.forEach(function (s) {
                         html += '<div class="d-flex justify-content-between align-items-center mb-1">';
-                        html += '<span><i class="bi bi-person"></i> ' + s.username + '</span>';
+                        html += '<span><i class="bi bi-person"></i> ' + escapeHtml(s.username) + '</span>';
                         html += '<a href="#" class="btn btn-sm btn-outline-danger unshare-btn" data-bookmark-id="' + s.bookmark_id + '" data-user-id="' + s.shared_with_user_id + '">Remove</a>';
                         html += '</div>';
                     });
