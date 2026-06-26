@@ -163,8 +163,14 @@ function register(string $username, string $email, string $password): array {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Invalid email address.';
     }
-    if (strlen($password) < 6) {
-        $errors[] = 'Password must be at least 6 characters.';
+    if (strlen($password) < 8) {
+        $errors[] = 'Password must be at least 8 characters.';
+    } elseif (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = 'Password must contain an uppercase letter.';
+    } elseif (!preg_match('/[a-z]/', $password)) {
+        $errors[] = 'Password must contain a lowercase letter.';
+    } elseif (!preg_match('/[0-9]/', $password)) {
+        $errors[] = 'Password must contain a number.';
     }
     if (preg_match('/[<>"\'&]/', $username)) {
         $errors[] = 'Username contains invalid characters.';

@@ -17,8 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf_token($_POST['csrf_toke
         $error = 'All fields are required.';
     } elseif ($new !== $confirm) {
         $error = 'New passwords do not match.';
-    } elseif (strlen($new) < 6) {
-        $error = 'New password must be at least 6 characters.';
+    } elseif (strlen($new) < 8) {
+        $error = 'Password must be at least 8 characters.';
+    } elseif (!preg_match('/[A-Z]/', $new)) {
+        $error = 'Password must contain an uppercase letter.';
+    } elseif (!preg_match('/[a-z]/', $new)) {
+        $error = 'Password must contain a lowercase letter.';
+    } elseif (!preg_match('/[0-9]/', $new)) {
+        $error = 'Password must contain a number.';
     } else {
         $stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id = ?');
         $stmt->execute([$user_id]);
@@ -64,11 +70,11 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                     <div class="mb-3">
                         <label class="form-label">New Password</label>
-                        <input type="password" name="new_password" class="form-control" required minlength="6">
+                        <input type="password" name="new_password" class="form-control" required minlength="8">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Confirm New Password</label>
-                        <input type="password" name="confirm_password" class="form-control" required minlength="6">
+                        <input type="password" name="confirm_password" class="form-control" required minlength="8">
                     </div>
                     <button type="submit" class="btn btn-primary">Change Password</button>
                 </form>

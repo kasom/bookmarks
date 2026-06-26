@@ -65,6 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } elseif ($action === 'get_shares') {
         $bookmark_id = (int)($_POST['bookmark_id'] ?? 0);
+
+        // Verify the caller owns this bookmark or is an admin
+        $stmt = $pdo->prepare('SELECT id FROM bookmarks WHERE id = ? AND user_id = ?');
+        $stmt->execute([$bookmark_id, $user_id]);
+        if (!$stmt->fetch() && !is_admin()) {
+            echo json_encode(['error' => 'Bookmark not found']);
+            exit;
+        }
+
         $shares = get_bookmark_shares($bookmark_id);
         echo json_encode(['success' => true, 'shares' => $shares]);
 

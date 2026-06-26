@@ -28,8 +28,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf_token($_POST['csrf_toke
         $pdo->prepare('UPDATE users SET disabled = ? WHERE id = ? AND id != ?')->execute([$new_val, $post_id, get_current_user_id()]);
         $msg = $new_val ? 'User disabled.' : 'User re-enabled.';
     } elseif ($post_action === 'delete_user') {
-        $pdo->prepare('DELETE FROM users WHERE id = ? AND id != ?')->execute([$post_id, get_current_user_id()]);
-        $msg = 'User and all their data deleted.';
+        $pdo->beginTransaction();
+        try {
+            // Verify user exists and is not the current admin
+            $stmt = $pdo->prepare('SELECT id FROM users WHERE id = ? AND id != ? FOR UPDATE');
+            $stmt->execute([$post_id, get_current_user_id()]);
+            if (!$stmt->fetch()) {
+                $pdo->rollBack();
+                $msg = 'User not found.';
+            } else {
+                // Delete all related data explicitly before deleting the user
+                $pdo->prepare('DELETE FROM shared_bookmarks WHERE shared_by_user_id = ? OR shared_with_user_id = ?')->execute([$post_id, $post_id]);
+                $pdo->prepare('DELETE FROM bookmark_tags WHERE bookmark_id IN (SELECT id FROM bookmarks WHERE user_id = ?)')->execute([$post_id]);
+                $pdo->prepare('DELETE FROM bookmarks WHERE user_id = ?')->execute([$post_id]);
+                $pdo->prepare('DELETE FROM folders WHERE user_id = ?')->execute([$post_id]);
+                $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$post_id]);
+                $pdo->commit();
+                $msg = 'User and all their data deleted.';
+            }
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $msg = 'Failed to delete user. Please try again.';
+        }
     } elseif ($post_action === 'delete_bookmark') {
         $pdo->prepare('DELETE FROM bookmarks WHERE id = ?')->execute([$post_id]);
         $msg = 'Bookmark deleted.';
