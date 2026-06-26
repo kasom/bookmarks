@@ -1,5 +1,14 @@
 <?php
 // includes/auth.php
+
+// Secure session configuration (must be before session_start())
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) ? 1 : 0);
+ini_set('session.cookie_samesite', 'Lax');
+ini_set('session.use_strict_mode', 1);
+ini_set('session.sid_length', 48);
+ini_set('session.sid_bits_per_character', 6);
+
 session_start();
 
 require_once __DIR__ . '/../config/database.php';
@@ -121,6 +130,9 @@ function login(string $username, string $password): array {
         return ['success' => false, 'error' => 'Your account is pending approval. Please wait.'];
     }
 
+    // Prevent session fixation
+    session_regenerate_id(true);
+
     clear_rate_limit('login');
     $_SESSION['user_id'] = (int)$user['id'];
     $_SESSION['username'] = $user['username'];
@@ -165,10 +177,9 @@ function register(string $username, string $email, string $password): array {
     $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE username = ? OR email = ?');
     $stmt->execute([$username, $email]);
     if ($stmt->fetchColumn() > 0) {
+        record_rate_attempt('register');
         return ['success' => false, 'errors' => ['Username or email already exists.']];
     }
-
-    record_rate_attempt('register');
 
     $hash = password_hash($password, PASSWORD_BCRYPT);
     $stmt = $pdo->prepare('INSERT INTO users (username, email, password_hash, approved) VALUES (?, ?, ?, 0)');
