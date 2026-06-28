@@ -108,6 +108,19 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
         </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header"><h5 class="mb-0">Maintenance & Cleanup</h5></div>
+            <div class="card-body">
+                <div>
+                    <h6>Duplicate Bookmark Finder</h6>
+                    <p class="text-muted small">Scan your library for bookmarks with identical URLs. You can choose to keep the oldest or newest entries, or select specific ones to delete.</p>
+                    <a href="/bookmarks/duplicates.php" class="btn btn-outline-danger">
+                        <i class="bi bi-clouds-fill"></i> Find and Clean Duplicates
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
