@@ -166,19 +166,30 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="row">
                 <?php foreach ($bookmarks as $bm): ?>
                 <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card h-100">
+                    <div class="card h-100 bookmark-card">
                         <?php 
                         $yt_id = get_youtube_video_id($bm['url']);
                         if ($yt_id): 
                         ?>
-                            <img src="https://img.youtube.com/vi/<?= h($yt_id) ?>/mqdefault.jpg" class="card-img-top" alt="YouTube Thumbnail" style="object-fit: cover; height: 160px;">
+                            <div class="thumbnail-wrapper">
+                                <img src="https://img.youtube.com/vi/<?= h($yt_id) ?>/mqdefault.jpg" alt="YouTube Thumbnail">
+                                <div class="play-overlay youtube-play-btn" data-yt-id="<?= h($yt_id) ?>">
+                                    <i class="bi bi-play-fill"></i>
+                                </div>
+                            </div>
                         <?php endif; ?>
                         <div class="card-body">
-                            <h6 class="card-title mb-2">
-                                <a href="<?= h($bm['url']) ?>" target="_blank" class="text-decoration-none">
-                                    <?= h($bm['title']) ?>
-                                </a>
-                            </h6>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-0 d-flex align-items-center">
+                                    <img src="https://www.google.com/s2/favicons?sz=32&domain=<?= urlencode(parse_url($bm['url'], PHP_URL_HOST)) ?>" class="favicon-icon" alt="" onerror="this.style.display='none'">
+                                    <a href="<?= h($bm['url']) ?>" target="_blank" class="text-decoration-none align-middle text-truncate" style="max-width: 140px;" title="<?= h($bm['title']) ?>">
+                                        <?= h($bm['title']) ?>
+                                    </a>
+                                </h6>
+                                <button class="btn-copy-url" data-url="<?= h($bm['url']) ?>" title="Copy URL">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
                             <p class="card-text small text-muted mb-2">
                                 <i class="bi bi-link-45deg"></i> <?= h(parse_url($bm['url'], PHP_URL_HOST)) ?>
                             </p>
@@ -186,14 +197,14 @@ require_once __DIR__ . '/../includes/header.php';
                                 <p class="card-text small"><?= h(mb_substr($bm['description'], 0, 100)) ?><?= mb_strlen($bm['description']) > 100 ? '...' : '' ?></p>
                             <?php endif; ?>
                             <?php if ($bm['tags']): ?>
-                                <div>
+                                <div class="d-flex flex-wrap gap-1">
                                     <?php foreach (explode(',', $bm['tags']) as $tag_name): ?>
-                                        <span class="badge bg-secondary"><?= h(trim($tag_name)) ?></span>
+                                        <span class="badge tag-badge"><?= h(trim($tag_name)) ?></span>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <div class="card-footer bg-transparent">
+                        <div class="card-footer bg-transparent border-0 pt-0">
                             <a href="/bookmarks/public/bookmark.php?id=<?= $bm['id'] ?>" class="btn btn-sm btn-outline-primary">
                                 View Bookmark
                             </a>
@@ -203,6 +214,22 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+    </div>
+</div>
+
+<!-- YouTube Video Modal -->
+<div class="modal fade" id="youtubeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 bg-transparent">
+            <div class="modal-header border-0 p-0 mb-2 justify-content-end">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="ratio ratio-16x9 shadow-lg rounded overflow-hidden">
+                    <iframe src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen id="youtubePlayerIframe"></iframe>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

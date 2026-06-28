@@ -158,34 +158,45 @@ require_once __DIR__ . '/includes/header.php';
                         $yt_id = get_youtube_video_id($bm['url']);
                         if ($yt_id): 
                         ?>
-                            <img src="https://img.youtube.com/vi/<?= h($yt_id) ?>/mqdefault.jpg" class="card-img-top" alt="YouTube Thumbnail" style="object-fit: cover; height: 160px;">
+                            <div class="thumbnail-wrapper">
+                                <img src="https://img.youtube.com/vi/<?= h($yt_id) ?>/mqdefault.jpg" alt="YouTube Thumbnail">
+                                <div class="play-overlay youtube-play-btn" data-yt-id="<?= h($yt_id) ?>">
+                                    <i class="bi bi-play-fill"></i>
+                                </div>
+                            </div>
                         <?php endif; ?>
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="card-title mb-0">
-                                    <a href="<?= h($bm['url']) ?>" target="_blank" class="text-decoration-none">
+                                <h6 class="card-title mb-0 d-flex align-items-center">
+                                    <img src="https://www.google.com/s2/favicons?sz=32&domain=<?= urlencode(parse_url($bm['url'], PHP_URL_HOST)) ?>" class="favicon-icon" alt="" onerror="this.style.display='none'">
+                                    <a href="<?= h($bm['url']) ?>" target="_blank" class="text-decoration-none align-middle text-truncate" style="max-width: 140px;" title="<?= h($bm['title']) ?>">
                                         <?= h($bm['title']) ?>
                                     </a>
                                 </h6>
-                                <?php if ((int)$bm['user_id'] === $user_id): ?>
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots-vertical"></i>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn-copy-url me-1" data-url="<?= h($bm['url']) ?>" title="Copy URL">
+                                        <i class="bi bi-clipboard"></i>
                                     </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item edit-bookmark" href="#" data-id="<?= $bm['id'] ?>">
-                                            <i class="bi bi-pencil"></i> Edit
-                                        </a></li>
-                                        <li><a class="dropdown-item share-bookmark" href="#" data-id="<?= $bm['id'] ?>">
-                                            <i class="bi bi-share"></i> Share
-                                        </a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger delete-bookmark" href="#" data-id="<?= $bm['id'] ?>">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </a></li>
-                                    </ul>
+                                    <?php if ((int)$bm['user_id'] === $user_id): ?>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-link p-0 text-body-secondary" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item edit-bookmark" href="#" data-id="<?= $bm['id'] ?>">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a></li>
+                                            <li><a class="dropdown-item share-bookmark" href="#" data-id="<?= $bm['id'] ?>">
+                                                <i class="bi bi-share"></i> Share
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger delete-bookmark" href="#" data-id="<?= $bm['id'] ?>">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
-                                <?php endif; ?>
                             </div>
                             <p class="card-text small text-muted mb-2">
                                 <i class="bi bi-link-45deg"></i> <?= h(parse_url($bm['url'], PHP_URL_HOST)) ?>
@@ -405,6 +416,22 @@ require_once __DIR__ . '/includes/header.php';
                     <button type="submit" class="btn btn-primary">Share</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- YouTube Video Modal -->
+<div class="modal fade" id="youtubeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 bg-transparent">
+            <div class="modal-header border-0 p-0 mb-2 justify-content-end">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="ratio ratio-16x9 shadow-lg rounded overflow-hidden">
+                    <iframe src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen id="youtubePlayerIframe"></iframe>
+                </div>
+            </div>
         </div>
     </div>
 </div>

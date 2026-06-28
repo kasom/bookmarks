@@ -360,4 +360,50 @@
             updateThemeIcon(theme);
         });
     }
+
+    // Copy URL to Clipboard
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-copy-url');
+        if (btn) {
+            e.preventDefault();
+            var url = btn.dataset.url;
+            if (!url) return;
+
+            navigator.clipboard.writeText(url).then(function () {
+                var icon = btn.querySelector('i');
+                if (icon) {
+                    var oldClass = icon.className;
+                    icon.className = 'bi bi-check-lg text-success';
+                    setTimeout(function () {
+                        icon.className = oldClass;
+                    }, 1500);
+                }
+            }).catch(function () {
+                alert('Failed to copy URL');
+            });
+        }
+    });
+
+    // YouTube Modal handling
+    var ytPlayerModalEl = document.getElementById('youtubeModal');
+    var ytPlayerIframe = document.getElementById('youtubePlayerIframe');
+    if (ytPlayerModalEl && ytPlayerIframe) {
+        document.addEventListener('click', function (e) {
+            var playBtn = e.target.closest('.youtube-play-btn');
+            if (playBtn) {
+                e.preventDefault();
+                var ytId = playBtn.dataset.ytId;
+                if (ytId) {
+                    ytPlayerIframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(ytId) + '?autoplay=1';
+                    var modal = new bootstrap.Modal(ytPlayerModalEl);
+                    modal.show();
+                }
+            }
+        });
+
+        // Reset iframe src when modal is hidden to stop video playback
+        ytPlayerModalEl.addEventListener('hidden.bs.modal', function () {
+            ytPlayerIframe.src = '';
+        });
+    }
 })();

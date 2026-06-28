@@ -27,40 +27,122 @@ if (!filter_var($url, FILTER_VALIDATE_URL) || !in_array(strtolower($scheme ?: ''
     exit;
 }
 
-$host = parse_url($url, PHP_URL_HOST);
-if (!$host) {
-    echo json_encode(['error' => 'Could not parse hostname']);
-    exit;
+function resolve_relative_url(string $base_url, string $relative_url): string {
+    if (parse_url($relative_url, PHP_URL_SCHEME) != '') {
+        return $relative_url;
+    }
+
+    $parts = parse_url($base_url);
+    $scheme = $parts['scheme'] ?? 'http';
+    $host = $parts['host'] ?? '';
+    $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+
+    if (substr($relative_url, 0, 2) === '//') {
+        return $scheme . ':' . $relative_url;
+    }
+
+    if (substr($relative_url, 0, 1) === '/') {
+        return $scheme . '://' . $host . $port . $relative_url;
+    }
+
+    $path = $parts['path'] ?? '/';
+    $dir = dirname($path);
+    if ($dir === '.' || $dir === '/') {
+        $dir = '';
+    }
+    return $scheme . '://' . $host . $port . '/' . ltrim($dir . '/' . $relative_url, '/');
 }
 
-// SSRF Protection: Resolve hostname to IP and validate it is not private/reserved
-$ip = gethostbyname($host);
-if (!$ip || $ip === $host) {
-    echo json_encode(['error' => 'Could not resolve hostname']);
-    exit;
+function fetch_metadata_safely(string $url): array {
+    $redirect_count = 0;
+    $max_redirects = 3;
+    $current_url = $url;
+
+    while ($redirect_count <= $max_redirects) {
+        $parts = parse_url($current_url);
+        if (!$parts || !isset($parts['host']) || !isset($parts['scheme'])) {
+            return ['success' => false, 'error' => 'Invalid URL structure'];
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        if (!in_array($scheme, ['http', 'https'])) {
+            return ['success' => false, 'error' => 'Unsupported URL scheme (must be http or https)'];
+        }
+
+        $host = $parts['host'];
+        $ip = gethostbyname($host);
+        if (!$ip || $ip === $host) {
+            return ['success' => false, 'error' => 'Could not resolve hostname'];
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return ['success' => false, 'error' => 'Access to private or reserved IP addresses is forbidden'];
+        }
+
+        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+        $path = $parts['path'] ?? '/';
+        $query = isset($parts['query']) ? '?' . $parts['query'] : '';
+        $fragment = isset($parts['fragment']) ? '#' . $parts['fragment'] : '';
+        
+        $ip_url = $scheme . '://' . $ip . $port . $path . $query . $fragment;
+
+        $ctx_options = [
+            'http' => [
+                'timeout' => 3.0,
+                'header' => "User-Agent: facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_voiced.html)\r\nHost: " . $host . "\r\nConnection: close\r\n",
+                'follow_location' => 0,
+                'ignore_errors' => true
+            ]
+        ];
+
+        if ($scheme === 'https') {
+            $ctx_options['ssl'] = [
+                'peer_name' => $host,
+                'verify_peer' => true,
+                'verify_peer_name' => true
+            ];
+        }
+
+        $ctx = stream_context_create($ctx_options);
+        $html = @file_get_contents($ip_url, false, $ctx, 0, 524288);
+        if ($html === false) {
+            return ['success' => false, 'error' => 'Failed to fetch the URL'];
+        }
+
+        // Check status code and Location header for manual redirect handling
+        $redirect_url = null;
+        if (isset($http_response_header)) {
+            foreach ($http_response_header as $header) {
+                if (preg_match('/^Location:\s*(.*)$/i', $header, $matches)) {
+                    $redirect_url = trim($matches[1]);
+                    break;
+                }
+            }
+            
+            $is_redirect = false;
+            if (isset($http_response_header[0]) && preg_match('/HTTP\/\d\.\d\s+3\d\d/', $http_response_header[0])) {
+                $is_redirect = true;
+            }
+
+            if ($is_redirect && $redirect_url) {
+                $current_url = resolve_relative_url($current_url, $redirect_url);
+                $redirect_count++;
+                continue;
+            }
+        }
+
+        return ['success' => true, 'html' => $html];
+    }
+
+    return ['success' => false, 'error' => 'Too many redirects'];
 }
 
-if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-    echo json_encode(['error' => 'Access to private or reserved IP addresses is forbidden']);
+$fetch_res = fetch_metadata_safely($url);
+if (!$fetch_res['success']) {
+    echo json_encode(['error' => $fetch_res['error']]);
     exit;
 }
-
-// Fetch content safely (limit size and timeout)
-$ctx = stream_context_create([
-    'http' => [
-        'timeout' => 3.0, // 3 seconds timeout
-        'header' => "User-Agent: facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_voiced.html)\r\n",
-        'max_redirects' => 3,
-        'follow_location' => 1
-    ]
-]);
-
-// Read up to 512KB of the page to avoid downloading large files (e.g. ISOs, huge PDFs)
-$html = @file_get_contents($url, false, $ctx, 0, 524288);
-if ($html === false) {
-    echo json_encode(['error' => 'Failed to fetch the URL']);
-    exit;
-}
+$html = $fetch_res['html'];
 
 // Parse Title
 $title = '';
