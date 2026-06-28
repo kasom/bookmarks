@@ -33,6 +33,7 @@ if (!isset($pageTitle)) $pageTitle = 'Bookmarks';
             <div class="d-flex align-items-center">
                 <?php if (is_logged_in()): ?>
                     <span class="text-body-secondary me-3"><i class="bi bi-person"></i> <?= h(get_current_username()) ?></span>
+                    <a href="/bookmarks/tags.php" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-tags"></i> Tags</a>
                     <a href="/bookmarks/settings.php" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-gear"></i> Settings</a>
                     <a href="/bookmarks/public/user.php?username=<?= urlencode(get_current_username()) ?>" class="btn btn-sm btn-outline-secondary me-2" target="_blank">
                         <i class="bi bi-globe"></i> Public
