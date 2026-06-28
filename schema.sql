@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS folders (
     user_id INT UNSIGNED NOT NULL,
     name VARCHAR(100) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_folders_user_name (user_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS bookmarks (
@@ -34,7 +35,9 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL,
     INDEX idx_user_id (user_id),
-    INDEX idx_visibility (visibility)
+    INDEX idx_visibility (visibility),
+    INDEX idx_bookmarks_user_visibility_created (user_id, visibility, created_at),
+    INDEX idx_bookmarks_user_folder_created (user_id, folder_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS bookmark_tags (
@@ -42,7 +45,8 @@ CREATE TABLE IF NOT EXISTS bookmark_tags (
     bookmark_id INT UNSIGNED NOT NULL,
     tag_name VARCHAR(50) NOT NULL,
     FOREIGN KEY (bookmark_id) REFERENCES bookmarks(id) ON DELETE CASCADE,
-    INDEX idx_tag (tag_name)
+    INDEX idx_tag (tag_name),
+    INDEX idx_bookmark_tags_cover (bookmark_id, tag_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS shared_bookmarks (
