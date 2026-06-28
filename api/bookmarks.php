@@ -88,6 +88,13 @@ if ($method === 'POST') {
             exit;
         }
 
+        // If updated to private but has active shares, keep/change visibility to 'shared'
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM shared_bookmarks WHERE bookmark_id = ?');
+        $stmt->execute([$id]);
+        if ((int)$stmt->fetchColumn() > 0 && $visibility === 'private') {
+            $visibility = 'shared';
+        }
+
         if ($folder_id) {
             $stmt = $pdo->prepare('SELECT id FROM folders WHERE id = ? AND user_id = ?');
             $stmt->execute([$folder_id, $user_id]);

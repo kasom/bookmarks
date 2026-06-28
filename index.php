@@ -111,6 +111,7 @@ require_once __DIR__ . '/includes/header.php';
                                         <?= h($bm['title']) ?>
                                     </a>
                                 </h6>
+                                <?php if ((int)$bm['user_id'] === $user_id): ?>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
                                         <i class="bi bi-three-dots-vertical"></i>
@@ -128,10 +129,16 @@ require_once __DIR__ . '/includes/header.php';
                                         </a></li>
                                     </ul>
                                 </div>
+                                <?php endif; ?>
                             </div>
                             <p class="card-text small text-muted mb-2">
                                 <i class="bi bi-link-45deg"></i> <?= h(parse_url($bm['url'], PHP_URL_HOST)) ?>
                             </p>
+                            <?php if (!empty($bm['shared_by'])): ?>
+                                <p class="card-text small text-warning mb-2">
+                                    <i class="bi bi-person-fill"></i> Shared by <?= h($bm['shared_by']) ?>
+                                </p>
+                            <?php endif; ?>
                             <?php if ($bm['description']): ?>
                                 <p class="card-text small"><?= h(mb_substr($bm['description'], 0, 100)) ?><?= mb_strlen($bm['description']) > 100 ? '...' : '' ?></p>
                             <?php endif; ?>
@@ -302,29 +309,6 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Rename Folder Modal -->
-<div class="modal fade" id="renameFolderModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Rename Folder</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="renameFolderForm">
-                <div class="modal-body">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-                    <input type="hidden" name="id" id="rename_folder_id">
-                    <input type="text" name="name" id="rename_folder_name" class="form-control" required placeholder="New folder name">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Rename</button>
                 </div>
             </form>
         </div>

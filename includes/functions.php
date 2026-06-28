@@ -13,24 +13,25 @@ function get_bookmarks(int $user_id, string $filter = 'all', ?int $folder_id = n
     global $pdo;
 
     $conditions = [];
-    $params = [$user_id];
+    $params = [];
 
     if ($filter === 'private') {
         $conditions[] = 'b.visibility = ?';
         $params[] = 'private';
+        $conditions[] = 'b.user_id = ?';
+        $params[] = $user_id;
     } elseif ($filter === 'public') {
         $conditions[] = 'b.visibility = ?';
         $params[] = 'public';
+        $conditions[] = 'b.user_id = ?';
+        $params[] = $user_id;
     } elseif ($filter === 'shared_with_me') {
-        $sql = "SELECT b.*, GROUP_CONCAT(bt.tag_name) as tags
-                FROM bookmarks b
-                LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark_id
-                WHERE b.id IN (SELECT bookmark_id FROM shared_bookmarks WHERE shared_with_user_id = ?)
-                GROUP BY b.id
-                ORDER BY b.created_at DESC";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$user_id]);
-        return $stmt->fetchAll();
+        $conditions[] = 'b.id IN (SELECT bookmark_id FROM shared_bookmarks WHERE shared_with_user_id = ?)';
+        $params[] = $user_id;
+    } else {
+        // 'all' filter: bookmarks owned by the user
+        $conditions[] = 'b.user_id = ?';
+        $params[] = $user_id;
     }
 
     if ($folder_id !== null) {
@@ -43,15 +44,19 @@ function get_bookmarks(int $user_id, string $filter = 'all', ?int $folder_id = n
         $params[] = $tag;
     }
 
-    $where = $conditions ? 'WHERE b.user_id = ? AND ' . implode(' AND ', $conditions) : 'WHERE b.user_id = ?';
+    $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
-    $sql = "SELECT b.*, f.name as folder_name, GROUP_CONCAT(bt.tag_name) as tags
+    $sql = "SELECT b.*, f.name as folder_name, GROUP_CONCAT(DISTINCT bt.tag_name) as tags, u.username as shared_by
             FROM bookmarks b
             LEFT JOIN folders f ON b.folder_id = f.id
             LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark_id
+            LEFT JOIN shared_bookmarks sb ON b.id = sb.bookmark_id AND sb.shared_with_user_id = ?
+            LEFT JOIN users u ON sb.shared_by_user_id = u.id
             $where
             GROUP BY b.id
             ORDER BY b.created_at DESC";
+
+    array_unshift($params, $user_id);
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -101,6 +106,10 @@ function get_public_bookmarks_by_user(string $username, string $filter = 'all', 
     } elseif ($filter === 'shared') {
         $conditions[] = 'b.visibility = ?';
         $params[] = 'shared';
+    } else {
+        $conditions[] = 'b.visibility IN (?, ?)';
+        $params[] = 'public';
+        $params[] = 'shared';
     }
 
     if ($folder_id !== null) {
@@ -115,7 +124,7 @@ function get_public_bookmarks_by_user(string $username, string $filter = 'all', 
 
     $where = implode(' AND ', $conditions);
 
-    $sql = "SELECT b.*, f.name as folder_name, GROUP_CONCAT(bt.tag_name) as tags
+    $sql = "SELECT b.*, f.name as folder_name, GROUP_CONCAT(DISTINCT bt.tag_name) as tags
             FROM bookmarks b
             LEFT JOIN folders f ON b.folder_id = f.id
             LEFT JOIN bookmark_tags bt ON b.id = bt.bookmark_id
@@ -141,6 +150,10 @@ function get_public_folders(string $username, string $filter = 'all'): array {
     } elseif ($filter === 'shared') {
         $conditions[] = 'b.visibility = ?';
         $params[] = 'shared';
+    } else {
+        $conditions[] = 'b.visibility IN (?, ?)';
+        $params[] = 'public';
+        $params[] = 'shared';
     }
 
     $where = implode(' AND ', $conditions);
@@ -161,6 +174,10 @@ function get_public_tags(string $username, string $filter = 'all'): array {
         $params[] = 'public';
     } elseif ($filter === 'shared') {
         $conditions[] = 'b.visibility = ?';
+        $params[] = 'shared';
+    } else {
+        $conditions[] = 'b.visibility IN (?, ?)';
+        $params[] = 'public';
         $params[] = 'shared';
     }
 

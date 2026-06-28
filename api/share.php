@@ -47,6 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare('INSERT IGNORE INTO shared_bookmarks (bookmark_id, shared_by_user_id, shared_with_user_id) VALUES (?, ?, ?)');
         $stmt->execute([$bookmark_id, $user_id, (int)$target['id']]);
 
+        // If the bookmark is private, upgrade it to 'shared' visibility status
+        $stmt = $pdo->prepare('UPDATE bookmarks SET visibility = "shared" WHERE id = ? AND visibility = "private"');
+        $stmt->execute([$bookmark_id]);
+
         echo json_encode(['success' => true]);
 
     } elseif ($action === 'unshare') {
@@ -60,6 +64,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt = $pdo->prepare('DELETE FROM shared_bookmarks WHERE bookmark_id = ? AND shared_with_user_id = ? AND shared_by_user_id = ?');
         $stmt->execute([$bookmark_id, $user_id_target, $user_id]);
+
+        // Revert to 'private' visibility if no active shares remain
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM shared_bookmarks WHERE bookmark_id = ?');
+        $stmt->execute([$bookmark_id]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            $stmt = $pdo->prepare('UPDATE bookmarks SET visibility = "private" WHERE id = ? AND visibility = "shared"');
+            $stmt->execute([$bookmark_id]);
+        }
 
         echo json_encode(['success' => true]);
 
