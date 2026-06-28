@@ -112,11 +112,19 @@ require_once __DIR__ . '/includes/header.php';
         <div class="card shadow mt-4">
             <div class="card-header"><h5 class="mb-0">Maintenance & Cleanup</h5></div>
             <div class="card-body">
-                <div>
+                <div class="mb-4">
                     <h6>Duplicate Bookmark Finder</h6>
                     <p class="text-muted small">Scan your library for bookmarks with identical URLs. You can choose to keep the oldest or newest entries, or select specific ones to delete.</p>
                     <a href="/bookmarks/duplicates.php" class="btn btn-outline-danger">
                         <i class="bi bi-clouds-fill"></i> Find and Clean Duplicates
+                    </a>
+                </div>
+                <hr>
+                <div>
+                    <h6>Broken Link Checker</h6>
+                    <p class="text-muted small">Scan your bookmark library for dead or non-functional links. Identify server error pages, connection timeouts, or DNS resolution failures.</p>
+                    <a href="/bookmarks/check_links.php" class="btn btn-outline-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Find and Clean Broken Links
                     </a>
                 </div>
             </div>
