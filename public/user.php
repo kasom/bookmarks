@@ -167,6 +167,12 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php foreach ($bookmarks as $bm): ?>
                 <div class="col-md-6 col-lg-4 mb-3">
                     <div class="card h-100">
+                        <?php 
+                        $yt_id = get_youtube_video_id($bm['url']);
+                        if ($yt_id): 
+                        ?>
+                            <img src="https://img.youtube.com/vi/<?= h($yt_id) ?>/mqdefault.jpg" class="card-img-top" alt="YouTube Thumbnail" style="object-fit: cover; height: 160px;">
+                        <?php endif; ?>
                         <div class="card-body">
                             <h6 class="card-title mb-2">
                                 <a href="<?= h($bm['url']) ?>" target="_blank" class="text-decoration-none">

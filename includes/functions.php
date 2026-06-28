@@ -240,3 +240,28 @@ function get_bookmark_count(int $user_id): int {
     $stmt->execute([$user_id]);
     return (int)$stmt->fetchColumn();
 }
+
+function get_youtube_video_id(string $url): ?string {
+    $parsed = parse_url($url);
+    if (!$parsed) return null;
+    
+    $host = strtolower($parsed['host'] ?? '');
+    
+    if (in_array($host, ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com'])) {
+        if (isset($parsed['query'])) {
+            parse_str($parsed['query'], $query);
+            if (isset($query['v'])) {
+                return $query['v'];
+            }
+        }
+        // Handle path format like /embed/VIDEO_ID or /v/VIDEO_ID
+        $path_parts = explode('/', trim($parsed['path'] ?? '', '/'));
+        if (count($path_parts) >= 2 && in_array($path_parts[0], ['embed', 'v'])) {
+            return $path_parts[1];
+        }
+    } elseif ($host === 'youtu.be') {
+        return ltrim($parsed['path'] ?? '', '/');
+    }
+    
+    return null;
+}
