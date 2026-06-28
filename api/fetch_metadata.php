@@ -49,7 +49,7 @@ if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_
 $ctx = stream_context_create([
     'http' => [
         'timeout' => 3.0, // 3 seconds timeout
-        'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) BookmarksSystem/1.0\r\n",
+        'header' => "User-Agent: facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_voiced.html)\r\n",
         'max_redirects' => 3,
         'follow_location' => 1
     ]
@@ -67,12 +67,24 @@ $title = '';
 if (preg_match('/<title\b[^>]*>(.*?)<\/title>/is', $html, $matches)) {
     $title = trim($matches[1]);
 }
+if (!$title && preg_match('/<meta\s+[^>]*property=["\']og:title["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)) {
+    $title = trim($matches[1]);
+} elseif (!$title && preg_match('/<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:title["\']/is', $html, $matches)) {
+    $title = trim($matches[1]);
+}
 
 // Parse Description
 $description = '';
 if (preg_match('/<meta\s+[^>]*name=["\']description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)) {
     $description = trim($matches[1]);
 } elseif (preg_match('/<meta\s+[^>]*content=["\'](.*?)["\'][^>]*name=["\']description["\']/is', $html, $matches)) {
+    $description = trim($matches[1]);
+}
+
+// Open Graph fallback for description
+if (!$description && preg_match('/<meta\s+[^>]*property=["\']og:description["\'][^>]*content=["\'](.*?)["\']/is', $html, $matches)) {
+    $description = trim($matches[1]);
+} elseif (!$description && preg_match('/<meta\s+[^>]*content=["\'](.*?)["\'][^>]*property=["\']og:description["\']/is', $html, $matches)) {
     $description = trim($matches[1]);
 }
 
