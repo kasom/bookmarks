@@ -1,6 +1,6 @@
 /* css/style.css */
 body {
-    background-color: #f8f9fa;
+    background-color: var(--bs-body-bg);
     min-height: 100vh;
 }
 
@@ -39,7 +39,7 @@ body {
 
 .card {
     border-radius: 8px;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--bs-border-color);
 }
 
 .form-control:focus,

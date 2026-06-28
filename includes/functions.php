@@ -9,7 +9,7 @@ function get_folders(int $user_id): array {
     return $stmt->fetchAll();
 }
 
-function get_bookmarks(int $user_id, string $filter = 'all', ?int $folder_id = null, ?string $tag = null): array {
+function get_bookmarks(int $user_id, string $filter = 'all', ?int $folder_id = null, ?string $tag = null, ?string $search = null, string $sort = 'newest'): array {
     global $pdo;
 
     $conditions = [];
@@ -44,7 +44,23 @@ function get_bookmarks(int $user_id, string $filter = 'all', ?int $folder_id = n
         $params[] = $tag;
     }
 
+    if ($search !== null && $search !== '') {
+        $conditions[] = '(b.title LIKE ? OR b.url LIKE ? OR b.description LIKE ?)';
+        $params[] = '%' . $search . '%';
+        $params[] = '%' . $search . '%';
+        $params[] = '%' . $search . '%';
+    }
+
     $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+    $orderBy = 'b.created_at DESC';
+    if ($sort === 'oldest') {
+        $orderBy = 'b.created_at ASC';
+    } elseif ($sort === 'title_asc') {
+        $orderBy = 'b.title ASC';
+    } elseif ($sort === 'title_desc') {
+        $orderBy = 'b.title DESC';
+    }
 
     $sql = "SELECT b.*, f.name as folder_name, GROUP_CONCAT(DISTINCT bt.tag_name) as tags, u.username as shared_by
             FROM bookmarks b
@@ -54,7 +70,7 @@ function get_bookmarks(int $user_id, string $filter = 'all', ?int $folder_id = n
             LEFT JOIN users u ON sb.shared_by_user_id = u.id
             $where
             GROUP BY b.id
-            ORDER BY b.created_at DESC";
+            ORDER BY $orderBy";
 
     array_unshift($params, $user_id);
 
@@ -91,7 +107,7 @@ function get_shared_with_me(int $user_id): array {
     return $stmt->fetchAll();
 }
 
-function get_public_bookmarks_by_user(string $username, string $filter = 'all', ?int $folder_id = null, ?string $tag = null): array {
+function get_public_bookmarks_by_user(string $username, string $filter = 'all', ?int $folder_id = null, ?string $tag = null, ?string $search = null, string $sort = 'newest'): array {
     global $pdo;
 
     $conditions = [];
@@ -122,7 +138,23 @@ function get_public_bookmarks_by_user(string $username, string $filter = 'all', 
         $params[] = $tag;
     }
 
+    if ($search !== null && $search !== '') {
+        $conditions[] = '(b.title LIKE ? OR b.url LIKE ? OR b.description LIKE ?)';
+        $params[] = '%' . $search . '%';
+        $params[] = '%' . $search . '%';
+        $params[] = '%' . $search . '%';
+    }
+
     $where = implode(' AND ', $conditions);
+
+    $orderBy = 'b.created_at DESC';
+    if ($sort === 'oldest') {
+        $orderBy = 'b.created_at ASC';
+    } elseif ($sort === 'title_asc') {
+        $orderBy = 'b.title ASC';
+    } elseif ($sort === 'title_desc') {
+        $orderBy = 'b.title DESC';
+    }
 
     $sql = "SELECT b.*, f.name as folder_name, GROUP_CONCAT(DISTINCT bt.tag_name) as tags
             FROM bookmarks b
@@ -131,7 +163,7 @@ function get_public_bookmarks_by_user(string $username, string $filter = 'all', 
             JOIN users u ON b.user_id = u.id
             WHERE $where
             GROUP BY b.id
-            ORDER BY b.created_at DESC";
+            ORDER BY $orderBy";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

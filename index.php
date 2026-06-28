@@ -7,10 +7,12 @@ require_login();
 $user_id = get_current_user_id();
 
 $filter = $_GET['filter'] ?? 'all';
-$folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : null;
+$folder_id = isset($_GET['folder_id']) && $_GET['folder_id'] !== '' ? (int)$_GET['folder_id'] : null;
 $tag = $_GET['tag'] ?? null;
+$search = trim($_GET['search'] ?? '');
+$sort = trim($_GET['sort'] ?? 'newest');
 
-$bookmarks = get_bookmarks($user_id, $filter, $folder_id, $tag);
+$bookmarks = get_bookmarks($user_id, $filter, $folder_id, $tag, $search, $sort);
 $folders = get_folders($user_id);
 $tags = get_all_tags($user_id);
 $shared = get_shared_with_me($user_id);
@@ -95,6 +97,54 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <div class="col-md-9">
+        <!-- Search and Sort Controls -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <form method="GET" class="row g-3 align-items-center">
+                    <?php if (!empty($filter) && $filter !== 'all'): ?>
+                        <input type="hidden" name="filter" value="<?= h($filter) ?>">
+                    <?php endif; ?>
+                    <?php if ($folder_id !== null): ?>
+                        <input type="hidden" name="folder_id" value="<?= h($folder_id) ?>">
+                    <?php endif; ?>
+                    <?php if ($tag !== null): ?>
+                        <input type="hidden" name="tag" value="<?= h($tag) ?>">
+                    <?php endif; ?>
+
+                    <div class="col-md-7">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search by title, description or URL..." value="<?= h($search) ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="sort" class="form-select" onchange="this.form.submit()">
+                            <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest Added</option>
+                            <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Oldest Added</option>
+                            <option value="title_asc" <?= $sort === 'title_asc' ? 'selected' : '' ?>>Title (A-Z)</option>
+                            <option value="title_desc" <?= $sort === 'title_desc' ? 'selected' : '' ?>>Title (Z-A)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-secondary">Search</button>
+                    </div>
+
+                    <?php if ($search !== ''): ?>
+                    <div class="col-12 mt-2">
+                        <span class="badge bg-secondary p-2">
+                            Search: "<?= h($search) ?>" 
+                            <a href="index.php?<?= http_build_query(array_filter(['filter' => $filter !== 'all' ? $filter : null, 'folder_id' => $folder_id, 'tag' => $tag, 'sort' => $sort])) ?>" class="text-white ms-2 text-decoration-none" title="Clear search">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <?php endif; ?>
+                </form>
+            </div>
+        </div>
+
         <?php if (empty($bookmarks)): ?>
             <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i> No bookmarks found. Add one to get started!
@@ -176,7 +226,12 @@ require_once __DIR__ . '/includes/header.php';
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <div class="mb-3">
                         <label class="form-label">URL *</label>
-                        <input type="url" name="url" class="form-control" required placeholder="https://example.com">
+                        <div class="input-group">
+                            <input type="url" name="url" class="form-control" required placeholder="https://example.com">
+                            <button class="btn btn-outline-secondary btn-fetch-metadata" type="button" title="Auto-fetch Title & Description">
+                                <i class="bi bi-arrow-clockwise"></i> Fetch
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Title *</label>
@@ -230,7 +285,12 @@ require_once __DIR__ . '/includes/header.php';
                     <input type="hidden" name="id" id="edit_id">
                     <div class="mb-3">
                         <label class="form-label">URL *</label>
-                        <input type="url" name="url" id="edit_url" class="form-control" required>
+                        <div class="input-group">
+                            <input type="url" name="url" id="edit_url" class="form-control" required>
+                            <button class="btn btn-outline-secondary btn-fetch-metadata" type="button" title="Auto-fetch Title & Description">
+                                <i class="bi bi-arrow-clockwise"></i> Fetch
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Title *</label>

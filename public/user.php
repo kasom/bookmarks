@@ -34,10 +34,12 @@ if (!$user) {
 }
 
 $filter = $_GET['filter'] ?? 'all';
-$folder_id = isset($_GET['folder_id']) ? (int)$_GET['folder_id'] : null;
+$folder_id = isset($_GET['folder_id']) && $_GET['folder_id'] !== '' ? (int)$_GET['folder_id'] : null;
 $tag = $_GET['tag'] ?? null;
+$search = trim($_GET['search'] ?? '');
+$sort = trim($_GET['sort'] ?? 'newest');
 
-$bookmarks = get_public_bookmarks_by_user($username, $filter, $folder_id, $tag);
+$bookmarks = get_public_bookmarks_by_user($username, $filter, $folder_id, $tag, $search, $sort);
 $folders = get_public_folders($username, $filter);
 $tags = get_public_tags($username, $filter);
 
@@ -107,6 +109,55 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <div class="col-md-9">
+        <!-- Search and Sort Controls -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <form method="GET" class="row g-3 align-items-center">
+                    <input type="hidden" name="username" value="<?= h($username) ?>">
+                    <?php if (!empty($filter) && $filter !== 'all'): ?>
+                        <input type="hidden" name="filter" value="<?= h($filter) ?>">
+                    <?php endif; ?>
+                    <?php if ($folder_id !== null): ?>
+                        <input type="hidden" name="folder_id" value="<?= h($folder_id) ?>">
+                    <?php endif; ?>
+                    <?php if ($tag !== null): ?>
+                        <input type="hidden" name="tag" value="<?= h($tag) ?>">
+                    <?php endif; ?>
+
+                    <div class="col-md-7">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search public bookmarks..." value="<?= h($search) ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="sort" class="form-select" onchange="this.form.submit()">
+                            <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest Added</option>
+                            <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Oldest Added</option>
+                            <option value="title_asc" <?= $sort === 'title_asc' ? 'selected' : '' ?>>Title (A-Z)</option>
+                            <option value="title_desc" <?= $sort === 'title_desc' ? 'selected' : '' ?>>Title (Z-A)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-secondary">Search</button>
+                    </div>
+
+                    <?php if ($search !== ''): ?>
+                    <div class="col-12 mt-2">
+                        <span class="badge bg-secondary p-2">
+                            Search: "<?= h($search) ?>" 
+                            <a href="user.php?<?= http_build_query(array_filter(['username' => $username, 'filter' => $filter !== 'all' ? $filter : null, 'folder_id' => $folder_id, 'tag' => $tag, 'sort' => $sort])) ?>" class="text-white ms-2 text-decoration-none" title="Clear search">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <?php endif; ?>
+                </form>
+            </div>
+        </div>
+
         <?php if (empty($bookmarks)): ?>
             <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i> No public bookmarks found.

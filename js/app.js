@@ -287,4 +287,77 @@
             }
         });
     }
+
+    // Fetch Metadata from URL
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btn-fetch-metadata');
+        if (btn) {
+            e.preventDefault();
+            var form = btn.closest('form');
+            var urlInput = form.querySelector('input[name="url"]');
+            var titleInput = form.querySelector('input[name="title"]');
+            var descInput = form.querySelector('textarea[name="description"]');
+            
+            var url = urlInput.value.trim();
+            if (!url) {
+                alert('Please enter a URL first.');
+                return;
+            }
+            
+            var originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+            
+            var fd = new FormData();
+            fd.append('url', url);
+            fd.append('csrf_token', getCsrfToken());
+            
+            fetch('/bookmarks/api/fetch_metadata.php', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    if (data.success) {
+                        if (data.title) {
+                            titleInput.value = data.title;
+                        }
+                        if (data.description && descInput) {
+                            descInput.value = data.description;
+                        }
+                    } else {
+                        alert(data.error || 'Failed to fetch metadata.');
+                    }
+                })
+                .catch(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    alert('Request failed');
+                });
+        }
+    });
+
+    // Theme Switcher Toggle
+    function updateThemeIcon(theme) {
+        var icon = document.getElementById('themeToggleIcon');
+        if (icon) {
+            if (theme === 'dark') {
+                icon.className = 'bi bi-moon-fill';
+            } else {
+                icon.className = 'bi bi-sun-fill';
+            }
+        }
+    }
+
+    var currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+    updateThemeIcon(currentTheme);
+
+    var themeBtn = document.getElementById('themeToggleBtn');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', function() {
+            var theme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+            updateThemeIcon(theme);
+        });
+    }
 })();
